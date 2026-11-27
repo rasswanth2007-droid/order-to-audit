@@ -1,0 +1,17 @@
+{
+  "name": "Annam Foods Factory Operations",
+  "short_name": "Annam Foods",
+  "description": "Orders, production, stock and accounts for a small snack factory.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF8F5",
+  "theme_color": "#0F5C5C",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

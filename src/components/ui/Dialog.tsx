@@ -1,0 +1,42 @@
+import { useEffect, useRef, type ReactNode } from "react";
+import { Icon } from "./Icon";
+
+export function Dialog({
+  title,
+  children,
+  onClose,
+}: {
+  title: string;
+  children: ReactNode;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+
+  return (
+    <div
+      className="dialog-backdrop"
+      role="presentation"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dialog-title"
+        tabIndex={-1}
+        ref={ref}
+      >
+        <div className="dialog-title">
+          <h2 id="dialog-title">{title}</h2>
+          <button aria-label="Close dialog" onClick={onClose}>
+            <Icon name="close" />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}

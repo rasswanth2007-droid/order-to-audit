@@ -1,0 +1,28 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Database & local data
+data/*.db*
+data/*.sqlite*
+
+# Node & frontend build output
+node_modules/
+dist/
+.vite/
+
+# Tooling, logs & OS
+.figma/
+*.log
+.DS_Store
+Thumbs.db

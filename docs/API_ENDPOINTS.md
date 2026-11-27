@@ -1,0 +1,66 @@
+# API endpoints (generated from OpenAPI)
+
+Base URL: /api/v1 (prefix already included in the paths below). Live docs at /docs in development.
+
+- GET /api/v1/audit — Audit Log
+- POST /api/v1/auth/change-password — Change Password
+- POST /api/v1/auth/login — Login
+- GET /api/v1/auth/me — Me
+- GET /api/v1/availability — Fg Availability
+- GET /api/v1/boms — List Boms
+- GET /api/v1/boms/{product_id} — Get Bom
+- PUT /api/v1/boms/{product_id} — Put Bom
+- GET /api/v1/costing — Costing View
+- POST /api/v1/costing/monthly-overheads — Monthly Overhead
+- GET /api/v1/customers — List Customers
+- POST /api/v1/customers — Create Customer
+- PUT /api/v1/customers/{cid} — Update Customer
+- GET /api/v1/customers/{cid}/account — Customer Account
+- GET /api/v1/customers/{cid}/prices — Customer Prices
+- PUT /api/v1/customers/{cid}/prices — Set Customer Price
+- GET /api/v1/dashboard — Dashboard
+- POST /api/v1/inventory/adjustments — Adjustment
+- GET /api/v1/inventory/ledger — Inv Ledger
+- GET /api/v1/inventory/lots — Fg Lots
+- GET /api/v1/inventory/reconcile — Reconcile
+- GET /api/v1/inventory/summary — Inv Summary
+- GET /api/v1/invoices — List Invoices
+- GET /api/v1/invoices/{invoice_id} — Get Invoice
+- POST /api/v1/invoices/{invoice_id}/cancel — Cancel Invoice
+- POST /api/v1/invoices/{invoice_id}/dispatch — Dispatch Invoice
+- GET /api/v1/invoices/{invoice_id}/pdf — Invoice Pdf
+- GET /api/v1/invoices/{invoice_id}/share — Invoice Share
+- GET /api/v1/items — List Items
+- POST /api/v1/items — Create Item
+- PATCH /api/v1/items/{item_id} — Update Item
+- GET /api/v1/me/sales — My Sales
+- POST /api/v1/orders — Create Order
+- GET /api/v1/orders — List Orders
+- POST /api/v1/orders/sync — Sync Orders
+- GET /api/v1/orders/{order_id} — Get Order
+- PUT /api/v1/orders/{order_id} — Edit Order
+- POST /api/v1/orders/{order_id}/approve — Approve Order
+- POST /api/v1/orders/{order_id}/cancel — Cancel Order
+- POST /api/v1/orders/{order_id}/invoice — Raise Invoice
+- POST /api/v1/orders/{order_id}/reject — Reject Order
+- GET /api/v1/orders/{order_id}/stock-check — Order Stock Check
+- POST /api/v1/payments — Create Payment
+- GET /api/v1/payments — List Payments
+- POST /api/v1/production/runs — Create Run
+- GET /api/v1/production/runs — List Runs
+- GET /api/v1/production/runs/{rid} — Get Run
+- POST /api/v1/production/runs/{rid}/complete — Complete
+- POST /api/v1/production/runs/{rid}/issue — Issue
+- POST /api/v1/production/runs/{rid}/overheads — Add Overhead
+- POST /api/v1/purchases — Create Purchase
+- GET /api/v1/purchases — List Purchases
+- GET /api/v1/reports — Catalogue
+- GET /api/v1/reports/{key} — Report
+- GET /api/v1/settings — Get Settings
+- PUT /api/v1/settings — Put Settings
+- GET /api/v1/suppliers — List Suppliers
+- POST /api/v1/suppliers — Create Supplier
+- GET /api/v1/users — List Users
+- POST /api/v1/users — Create User
+- PATCH /api/v1/users/{uid} — Update User
+- GET /health — Health
