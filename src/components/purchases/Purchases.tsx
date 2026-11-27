@@ -1,9 +1,30 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Button, Dialog, EmptyState, ErrorBanner, LoadingState, PageHeader } from "../ui";
+import {
+  Badge,
+  Button,
+  Dialog,
+  EmptyState,
+  ErrorBanner,
+  Icon,
+  LoadingState,
+  PageHeader,
+  Stat,
+} from "../ui";
 import { api } from "@/services/api";
 import { formatDate, formatMoney, rupeesToPaise, todayISO } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
 import { useT } from "@/utils/i18n";
+
+type PurchaseLine = {
+  item_id: number;
+  item: string;
+  qty: string;
+  unit: string;
+  rate_paise: number;
+  rate_unit: string;
+  value_paise: number;
+  tax_paise: number;
+};
 
 type Purchase = {
   id: number;
@@ -15,13 +36,7 @@ type Purchase = {
   taxable_paise: number;
   tax_paise: number;
   total_paise: number;
-  lines: Array<{
-    item_id: number;
-    item: string;
-    qty: string;
-    unit: string;
-    value_paise: number;
-  }>;
+  lines: PurchaseLine[];
 };
 
 type SupplierOpt = { id: number; name: string };
@@ -35,10 +50,72 @@ type ItemOpt = {
 
 type LineDraft = { item_id: string; qty: string; unit: string; rate: string; gst_pct: string };
 
+function PurchaseDetailView({ purchase, onBack }: { purchase: Purchase; onBack: () => void }) {
+  const tr = useT();
+  return (
+    <div>
+      <button className="back-link" onClick={onBack}>
+        ‹ {tr("Purchases")}
+      </button>
+      <PageHeader
+        eyebrow="PROCUREMENT"
+        title={purchase.purchase_no}
+        description={`${purchase.supplier} · ${formatDate(purchase.purchase_date)}${purchase.supplier_invoice_no ? ` · Bill ${purchase.supplier_invoice_no}` : ""}`}
+        action={<Badge tone="success">{purchase.lines.length} ITEMS</Badge>}
+      />
+
+      <div className="stats">
+        <Stat label="Taxable value" value={formatMoney(purchase.taxable_paise)} />
+        <Stat label="Total GST" value={formatMoney(purchase.tax_paise)} />
+        <Stat label="Total" value={formatMoney(purchase.total_paise)} />
+      </div>
+
+      <div className="table-card overflow-x-auto">
+        <div className="table-title">
+          <h2>{tr("Line items")}</h2>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>{tr("Material")}</th>
+              <th className="number">{tr("Qty")}</th>
+              <th className="number">{tr("Rate")}</th>
+              <th className="number">{tr("Taxable")}</th>
+              <th className="number">{tr("GST")}</th>
+              <th className="number">{tr("Total")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {purchase.lines.map((l, idx) => (
+              <tr key={`${l.item_id}-${idx}`}>
+                <td>
+                  <strong>{l.item}</strong>
+                </td>
+                <td className="number">
+                  {l.qty} {l.unit}
+                </td>
+                <td className="number">
+                  {formatMoney(l.rate_paise)} / {l.rate_unit}
+                </td>
+                <td className="number">{formatMoney(l.value_paise)}</td>
+                <td className="number">{formatMoney(l.tax_paise)}</td>
+                <td className="number">
+                  <strong>{formatMoney(l.value_paise + l.tax_paise)}</strong>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function Purchases() {
   const { role, notify } = useAuth();
   const tr = useT();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [selected, setSelected] = useState<Purchase | null>(null);
   const [suppliers, setSuppliers] = useState<SupplierOpt[]>([]);
   const [items, setItems] = useState<ItemOpt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,6 +184,10 @@ export function Purchases() {
     }
   }
 
+  if (selected) {
+    return <PurchaseDetailView purchase={selected} onBack={() => setSelected(null)} />;
+  }
+
   const canWrite = role === "ADMIN" || role === "PRODUCTION";
 
   return (
@@ -151,33 +232,36 @@ export function Purchases() {
                 <th className="number">{tr("Taxable")}</th>
                 <th className="number">{tr("GST")}</th>
                 <th className="number">{tr("Total")}</th>
+                <th>
+                  <span className="sr-only">Open</span>
+                </th>
               </tr>
             </thead>
             <tbody>
               {purchases.map((p) => (
-                <tr key={p.id}>
+                <tr
+                  key={p.id}
+                  tabIndex={0}
+                  className="cursor-pointer"
+                  onClick={() => setSelected(p)}
+                  onKeyDown={(e) => e.key === "Enter" && setSelected(p)}
+                >
                   <td>
                     <strong>{p.purchase_no}</strong>
                   </td>
                   <td>{formatDate(p.purchase_date)}</td>
                   <td>{p.supplier}</td>
                   <td>{p.supplier_invoice_no || "—"}</td>
-                  <td className="whitespace-normal">
-                    <div className="flex flex-col gap-1 min-w-[200px]">
-                      {p.lines.map((l, idx) => (
-                        <div key={idx} className="text-sm flex items-center justify-between gap-3">
-                          <span>{l.item}</span>
-                          <span className="text-xs font-semibold text-[var(--muted)] whitespace-nowrap">
-                            {l.qty} {l.unit}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                  <td>
+                    <Badge>{p.lines.length} ITEMS</Badge>
                   </td>
                   <td className="number">{formatMoney(p.taxable_paise)}</td>
                   <td className="number">{formatMoney(p.tax_paise)}</td>
                   <td className="number">
                     <strong>{formatMoney(p.total_paise)}</strong>
+                  </td>
+                  <td>
+                    <Icon name="chevron" />
                   </td>
                 </tr>
               ))}
@@ -219,7 +303,7 @@ export function Purchases() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-sm">Items</span>
+                <span className="font-semibold text-sm">{tr("Items")}</span>
                 <Button
                   type="button"
                   variant="ghost"
