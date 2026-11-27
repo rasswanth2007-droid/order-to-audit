@@ -21,11 +21,22 @@ node_modules/
 dist/
 .vite/
 
-# Tooling, logs & OS
+# Local tooling, container files & non-deployment docs
 .figma/
+.mise.toml
+AGENTS.md
+CLAUDE.md
+Dockerfile
+docker-compose.yml
+scripts/
+docs/FIGMA_PROMPT.md
+src/data/fixtures.ts
+src/components/orders/StockPanel.tsx
+src/components/production/CompletedRun.tsx
+src/components/production/MaterialRows.tsx
+src/components/production/OutputForm.tsx
+
+# Logs & OS
 *.log
 .DS_Store
 Thumbs.db
-
-
-Problem Statement - Winter Internship Application - 2026 .pdf
