@@ -107,15 +107,47 @@ export function Login({ onLogin }: { onLogin: (user: UserInfo) => void }) {
             <span>or quick demo sign-in</span>
           </div>
           <div className="preview-roles">
-            <button type="button" disabled={busy} onClick={() => doLogin("admin", "Demo@12345")}>
+            <button
+              type="button"
+              disabled={busy || cooldown > 0}
+              onClick={() => doLogin("admin", "Demo@12345")}
+            >
               Admin desktop
             </button>
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || cooldown > 0}
               onClick={() => doLogin("salesman_a", "Demo@12345")}
             >
-              Salesman mobile
+              Salesman A (mobile)
+            </button>
+            <button
+              type="button"
+              disabled={busy || cooldown > 0}
+              onClick={() => doLogin("salesman_b", "Demo@12345")}
+            >
+              Salesman B (mobile)
+            </button>
+            <button
+              type="button"
+              disabled={busy || cooldown > 0}
+              onClick={() => doLogin("production", "Demo@12345")}
+            >
+              Production
+            </button>
+            <button
+              type="button"
+              disabled={busy || cooldown > 0}
+              onClick={() => doLogin("accountant", "Demo@12345")}
+            >
+              Accountant
+            </button>
+            <button
+              type="button"
+              disabled={busy || cooldown > 0}
+              onClick={() => doLogin("owner", "Demo@12345")}
+            >
+              Owner
             </button>
           </div>
           <p className="privacy">
