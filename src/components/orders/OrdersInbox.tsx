@@ -10,6 +10,7 @@ import {
   type QueuedOrder,
 } from "@/utils/offlineQueue";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 
 export type OrderSummary = {
   id: number;
@@ -44,6 +45,7 @@ export function OrdersInbox({
   mobile?: boolean;
 }) {
   const { notify } = useAuth();
+  const tr = useT();
   const [tab, setTab] = useState<string>(mobile ? "" : "SUBMITTED");
   const [query, setQuery] = useState("");
   const [offset, setOffset] = useState(0);
@@ -162,7 +164,7 @@ export function OrdersInbox({
               setOffset(0);
             }}
           >
-            {t.label}
+            {tr(t.label)}
           </button>
         ))}
       </div>
@@ -199,15 +201,15 @@ export function OrdersInbox({
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Order</th>
-                  <th scope="col">Customer</th>
-                  <th scope="col">Salesman</th>
-                  <th scope="col">Date</th>
+                  <th scope="col">{tr("Order")}</th>
+                  <th scope="col">{tr("Customer")}</th>
+                  <th scope="col">{tr("Salesman")}</th>
+                  <th scope="col">{tr("Date")}</th>
                   <th scope="col" className="number">
-                    Total
+                    {tr("Total")}
                   </th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Invoice</th>
+                  <th scope="col">{tr("Status")}</th>
+                  <th scope="col">{tr("Invoice")}</th>
                   <th>
                     <span className="sr-only">Open</span>
                   </th>

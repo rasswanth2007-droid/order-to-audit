@@ -14,6 +14,7 @@ import { api } from "@/services/api";
 import { formatDate, formatMoney, rupeesToPaise, todayISO } from "@/utils/format";
 import { statusTone } from "@/utils/helpers";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 
 type RunSummary = {
   id: number;
@@ -94,6 +95,7 @@ type WasteDraft = { item_id: string; qty: string; unit: string; reason: string }
 
 function RunDetailView({ runId, onBack }: { runId: number; onBack: () => void }) {
   const { role, notify } = useAuth();
+  const tr = useT();
   const [run, setRun] = useState<RunDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -249,7 +251,7 @@ function RunDetailView({ runId, onBack }: { runId: number; onBack: () => void })
   return (
     <div>
       <button className="back-link" onClick={onBack}>
-        ‹ All production runs
+        {tr("‹ All production runs")}
       </button>
       <PageHeader
         eyebrow="PRODUCTION"
@@ -274,7 +276,7 @@ function RunDetailView({ runId, onBack }: { runId: number; onBack: () => void })
             <span>{step > i + 1 ? <Icon name="check" /> : i + 1}</span>
             <div>
               <small>STEP {i + 1}</small>
-              <strong>{label}</strong>
+              <strong>{tr(label)}</strong>
             </div>
           </div>
         ))}
@@ -287,8 +289,8 @@ function RunDetailView({ runId, onBack }: { runId: number; onBack: () => void })
               <div className="section-heading mb-4">
                 <div>
                   <p className="eyebrow">STEP 1 OF 3</p>
-                  <h2>Issue raw materials</h2>
-                  <p>Confirm actual quantities issued from stock.</p>
+                  <h2>{tr("Issue raw materials")}</h2>
+                  <p>{tr("Confirm actual quantities issued from stock.")}</p>
                 </div>
               </div>
               <div className="space-y-3">
@@ -508,7 +510,7 @@ function RunDetailView({ runId, onBack }: { runId: number; onBack: () => void })
           <div className="card variance">
             <div className="section-heading">
               <div>
-                <h2>Planned vs actual</h2>
+                <h2>{tr("Planned vs actual")}</h2>
                 <p>Flagged beyond ±{run.variance.tolerance_pct}%</p>
               </div>
               <Icon name="trend" />
@@ -516,10 +518,10 @@ function RunDetailView({ runId, onBack }: { runId: number; onBack: () => void })
             <table>
               <thead>
                 <tr>
-                  <th>Material</th>
-                  <th className="number">Planned</th>
-                  <th className="number">Actual</th>
-                  <th className="number">Var</th>
+                  <th>{tr("Material")}</th>
+                  <th className="number">{tr("Planned")}</th>
+                  <th className="number">{tr("Actual")}</th>
+                  <th className="number">{tr("Var")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -565,12 +567,12 @@ function RunDetailView({ runId, onBack }: { runId: number; onBack: () => void })
 
           <div className="card cost-card p-5">
             <div className="section-heading mb-3">
-              <h2>Run cost</h2>
+              <h2>{tr("Run cost")}</h2>
               <Badge>SERVER CALCULATED</Badge>
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span>Materials</span>
+                <span>{tr("Materials")}</span>
                 <strong>{formatMoney(run.cost.material_paise)}</strong>
               </div>
               <div className="flex justify-between">
@@ -578,7 +580,7 @@ function RunDetailView({ runId, onBack }: { runId: number; onBack: () => void })
                 <strong>{formatMoney(run.cost.overhead_paise)}</strong>
               </div>
               <div className="flex justify-between border-t border-[var(--border)] pt-2 font-semibold">
-                <span>Total batch cost</span>
+                <span>{tr("Total batch cost")}</span>
                 <strong>{formatMoney(run.cost.total_paise)}</strong>
               </div>
             </div>
@@ -646,6 +648,7 @@ function RunDetailView({ runId, onBack }: { runId: number; onBack: () => void })
 
 export function ProductionRun() {
   const { role, notify } = useAuth();
+  const tr = useT();
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [pendingPlan, setPendingPlan] = useState<
     Array<{
@@ -783,7 +786,7 @@ export function ProductionRun() {
             aria-selected={statusFilter === t.value}
             onClick={() => setStatusFilter(t.value)}
           >
-            {t.label}
+            {tr(t.label)}
           </button>
         ))}
       </div>

@@ -3,6 +3,7 @@ import { Badge, Button, Dialog, EmptyState, ErrorBanner, LoadingState, PageHeade
 import { api } from "@/services/api";
 import { formatDate, formatMoney, rupeesToPaise } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 
 type StockRow = {
   item_id: number;
@@ -53,6 +54,7 @@ type WipRow = {
 
 export function Stock() {
   const { role, notify } = useAuth();
+  const tr = useT();
   const [tab, setTab] = useState<"summary" | "ledger" | "lots" | "wip" | "reconcile">("summary");
   const [kindFilter, setKindFilter] = useState("");
   const [summary, setSummary] = useState<StockRow[]>([]);
@@ -153,16 +155,16 @@ export function Stock() {
 
       <div className="tabs" role="tablist">
         <button role="tab" aria-selected={tab === "summary"} onClick={() => setTab("summary")}>
-          Stock summary
+          {tr("Stock summary")}
         </button>
         <button role="tab" aria-selected={tab === "ledger"} onClick={() => setTab("ledger")}>
-          Movement ledger
+          {tr("Movement ledger")}
         </button>
         <button role="tab" aria-selected={tab === "lots"} onClick={() => setTab("lots")}>
-          Finished lots
+          {tr("Finished lots")}
         </button>
         <button role="tab" aria-selected={tab === "wip"} onClick={() => setTab("wip")}>
-          Work in progress
+          {tr("Work in progress")}
         </button>
         {canReconcile && (
           <button
@@ -170,7 +172,7 @@ export function Stock() {
             aria-selected={tab === "reconcile"}
             onClick={() => setTab("reconcile")}
           >
-            Reconcile
+            {tr("Reconcile")}
           </button>
         )}
       </div>

@@ -592,8 +592,11 @@
 
 .back-link,
 .text-link {
+  align-items: center;
   color: var(--primary);
+  display: inline-flex;
   font-weight: 650;
+  gap: 4px;
   margin-bottom: 13px;
 }
 .review-grid {
@@ -845,7 +848,7 @@
   margin-bottom: 20px;
   overflow: hidden;
 }
-.run-steps button {
+.run-steps > * {
   align-items: center;
   color: var(--muted);
   display: flex;
@@ -855,29 +858,31 @@
   position: relative;
   text-align: left;
 }
-.run-steps button + button {
+.run-steps > * + * {
   border-left: 1px solid var(--border);
 }
-.run-steps button > span {
+.run-steps > * > span {
   align-items: center;
   background: #eeeae5;
   border-radius: 50%;
   display: flex;
+  flex-shrink: 0;
   font-weight: 700;
   height: 32px;
   justify-content: center;
   width: 32px;
 }
-.run-steps button.active {
+.run-steps > *.active {
   color: var(--text);
 }
-.run-steps button.active > span {
+.run-steps > *.active > span {
   background: var(--primary);
   color: white;
 }
-.run-steps button div {
+.run-steps > * div {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 .run-steps small {
   font-size: 10px;
@@ -887,7 +892,7 @@
   align-items: start;
   display: grid;
   gap: 20px;
-  grid-template-columns: minmax(500px, 1.12fr) minmax(430px, 0.88fr);
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
 }
 .run-form {
   padding: 24px;
@@ -2061,10 +2066,10 @@
   .datebar input {
     width: 100%;
   }
-  .run-steps button div {
+  .run-steps > * div {
     display: none;
   }
-  .run-steps button {
+  .run-steps > * {
     justify-content: center;
     padding: 10px;
   }

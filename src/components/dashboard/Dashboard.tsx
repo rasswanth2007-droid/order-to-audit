@@ -3,6 +3,7 @@ import { Badge, Button, ErrorBanner, Icon, LoadingState, PageHeader, Stat } from
 import { api } from "@/services/api";
 import { formatDate, formatMoney } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 import type { View } from "@/types";
 
 type DashboardRes = {
@@ -53,6 +54,7 @@ export function Dashboard({
   onNavigate?: (v: View) => void;
 }) {
   const { user } = useAuth();
+  const tr = useT();
   const [data, setData] = useState<DashboardRes | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -128,7 +130,7 @@ export function Dashboard({
             <section className="card">
               <div className="section-heading">
                 <div>
-                  <h2>Needs attention</h2>
+                  <h2>{tr("Needs attention")}</h2>
                   <p>Items requiring action</p>
                 </div>
                 <Badge tone={attentionCount > 0 ? "warning" : "success"}>
@@ -189,7 +191,7 @@ export function Dashboard({
             <section className="card">
               <div className="section-heading">
                 <div>
-                  <h2>Top debtors</h2>
+                  <h2>{tr("Top debtors")}</h2>
                   <p>Highest open balances</p>
                 </div>
                 {onNavigate && (
@@ -214,7 +216,7 @@ export function Dashboard({
             </section>
           </div>
 
-          <h2 className="section-title">Cost & margin by product</h2>
+          <h2 className="section-title">{tr("Cost & margin by product")}</h2>
           {data.cost_per_packet.length === 0 ? (
             <p className="text-sm text-[var(--muted)]">
               No completed production runs this month yet.
