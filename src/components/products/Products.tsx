@@ -3,6 +3,7 @@ import { Badge, Button, Dialog, EmptyState, ErrorBanner, LoadingState, PageHeade
 import { api } from "@/services/api";
 import { formatMoney, paiseToRupeesInput, rupeesToPaise } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 
 type Item = {
   id: number;
@@ -31,6 +32,7 @@ type SchemeRow = {
 
 export function Products() {
   const { role, notify } = useAuth();
+  const tr = useT();
   const [kind, setKind] = useState<"FINISHED" | "RAW" | "PACKAGING" | "SCHEMES">(
     role === "PRODUCTION" ? "RAW" : "FINISHED",
   );
@@ -172,13 +174,15 @@ export function Products() {
       <div className="tabs" role="tablist">
         {(["FINISHED", "RAW", "PACKAGING", "SCHEMES"] as const).map((k) => (
           <button key={k} role="tab" aria-selected={kind === k} onClick={() => setKind(k)}>
-            {k === "FINISHED"
-              ? "Finished goods"
-              : k === "RAW"
-                ? "Raw materials"
-                : k === "PACKAGING"
-                  ? "Packaging"
-                  : "Schemes"}
+            {tr(
+              k === "FINISHED"
+                ? "Finished goods"
+                : k === "RAW"
+                  ? "Raw materials"
+                  : k === "PACKAGING"
+                    ? "Packaging"
+                    : "Schemes",
+            )}
           </button>
         ))}
       </div>

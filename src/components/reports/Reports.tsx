@@ -12,6 +12,7 @@ import {
 import { api, apiDownload } from "@/services/api";
 import { formatDate, formatMoney, todayISO } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 
 type ReportCol = { key: string; label: string; kind: string };
 type ReportSection = {
@@ -114,6 +115,7 @@ function formatCell(value: unknown, kind: string): string {
 
 function ReportDetail({ reportKey, onBack }: { reportKey: string; onBack: () => void }) {
   const { notify } = useAuth();
+  const tr = useT();
   const initial = monthStartISO(0);
   const [preset, setPreset] = useState<"this" | "last" | "fy" | "custom">("this");
   const [fromDate, setFromDate] = useState(initial.from);
@@ -177,7 +179,7 @@ function ReportDetail({ reportKey, onBack }: { reportKey: string; onBack: () => 
   return (
     <div>
       <button className="back-link" onClick={onBack}>
-        ‹ All reports
+        {tr("‹ All reports")}
       </button>
       <PageHeader
         eyebrow="REPORT"
@@ -214,23 +216,23 @@ function ReportDetail({ reportKey, onBack }: { reportKey: string; onBack: () => 
       <div className="datebar">
         <div className="preset">
           <button className={preset === "this" ? "active" : ""} onClick={() => applyPreset("this")}>
-            This month
+            {tr("This month")}
           </button>
           <button className={preset === "last" ? "active" : ""} onClick={() => applyPreset("last")}>
-            Last month
+            {tr("Last month")}
           </button>
           <button className={preset === "fy" ? "active" : ""} onClick={() => applyPreset("fy")}>
-            This FY
+            {tr("This FY")}
           </button>
           <button
             className={preset === "custom" ? "active" : ""}
             onClick={() => setPreset("custom")}
           >
-            Custom
+            {tr("Custom")}
           </button>
         </div>
         <label>
-          From
+          {tr("From")}
           <input
             type="date"
             value={fromDate}
@@ -241,7 +243,7 @@ function ReportDetail({ reportKey, onBack }: { reportKey: string; onBack: () => 
           />
         </label>
         <label>
-          To
+          {tr("To")}
           <input
             type="date"
             value={toDate}
@@ -373,6 +375,7 @@ function ReportDetail({ reportKey, onBack }: { reportKey: string; onBack: () => 
 
 export function Reports() {
   const { role } = useAuth();
+  const tr = useT();
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [keys, setKeys] = useState<string[]>(Object.keys(REPORT_META));
   const [error, setError] = useState<unknown>(null);
@@ -420,14 +423,14 @@ export function Reports() {
             <Icon name="trend" size={26} />
           </div>
           <div>
-            <span>QUICK VIEW</span>
-            <h2>Business overview</h2>
-            <p>Start with this month's sales register, GST summary and collections.</p>
+            <span>{tr("QUICK VIEW")}</span>
+            <h2>{tr("Business overview")}</h2>
+            <p>{tr("Start with this month's sales register, GST summary and collections.")}</p>
           </div>
           <Button onClick={() => setOpenKey("sales-register")}>Open sales register</Button>
         </div>
       )}
-      <h2 className="section-title">All reports</h2>
+      <h2 className="section-title">{tr("All reports")}</h2>
       <div className="report-grid">
         {keys.map((k) => {
           const meta = REPORT_META[k] ?? { title: k, desc: "", icon: "file" as IconName };
@@ -437,8 +440,8 @@ export function Reports() {
                 <Icon name={meta.icon} />
               </span>
               <span>
-                <strong>{meta.title}</strong>
-                <small>{meta.desc}</small>
+                <strong>{tr(meta.title)}</strong>
+                <small>{tr(meta.desc)}</small>
               </span>
               <Icon name="chevron" />
             </button>

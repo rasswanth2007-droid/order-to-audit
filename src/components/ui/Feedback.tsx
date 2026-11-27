@@ -1,6 +1,7 @@
 import { ApiError } from "@/services/api";
 import { Button } from "./Button";
 import { Icon, type IconName } from "./Icon";
+import { useT } from "@/utils/i18n";
 
 export function ErrorBanner({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   if (!error) return null;
@@ -22,10 +23,11 @@ export function ErrorBanner({ error, onRetry }: { error: unknown; onRetry?: () =
 }
 
 export function LoadingState({ label = "Loading…" }: { label?: string }) {
+  const tr = useT();
   return (
     <div className="card p-8 text-center text-[var(--muted)] my-4" role="status">
       <div className="inline-block w-6 h-6 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin mb-2" />
-      <p>{label}</p>
+      <p>{tr(label)}</p>
     </div>
   );
 }
@@ -41,13 +43,14 @@ export function EmptyState({
   description?: string;
   action?: React.ReactNode;
 }) {
+  const tr = useT();
   return (
     <div className="card p-10 text-center my-4 flex flex-col items-center gap-2">
       <div className="w-12 h-12 rounded-full bg-[var(--primary-soft)] text-[var(--primary)] flex items-center justify-center mb-1">
         <Icon name={icon} size={22} />
       </div>
-      <h3 className="font-semibold text-base">{title}</h3>
-      {description && <p className="text-sm text-[var(--muted)] max-w-md">{description}</p>}
+      <h3 className="font-semibold text-base">{tr(title)}</h3>
+      {description && <p className="text-sm text-[var(--muted)] max-w-md">{tr(description)}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
   );

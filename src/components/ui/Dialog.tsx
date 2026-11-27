@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { Icon } from "./Icon";
+import { useT } from "@/utils/i18n";
 
 export function Dialog({
   title,
@@ -10,6 +11,7 @@ export function Dialog({
   children: ReactNode;
   onClose: () => void;
 }) {
+  const tr = useT();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     ref.current?.focus();
@@ -30,7 +32,7 @@ export function Dialog({
         ref={ref}
       >
         <div className="dialog-title">
-          <h2 id="dialog-title">{title}</h2>
+          <h2 id="dialog-title">{tr(title)}</h2>
           <button aria-label="Close dialog" onClick={onClose}>
             <Icon name="close" />
           </button>

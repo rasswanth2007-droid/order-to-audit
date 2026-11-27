@@ -14,6 +14,7 @@ import { ApiError, api, apiDownload } from "@/services/api";
 import { formatDate, formatMoney } from "@/utils/format";
 import { statusTone } from "@/utils/helpers";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 
 type InvoiceSummary = {
   id: number;
@@ -535,6 +536,7 @@ function InvoiceDetailView({ invoiceId, onBack }: { invoiceId: number; onBack: (
 }
 
 export function Invoices() {
+  const tr = useT();
   const [items, setItems] = useState<InvoiceSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState("");
@@ -601,7 +603,7 @@ export function Invoices() {
             aria-selected={statusFilter === t.value}
             onClick={() => setStatusFilter(t.value)}
           >
-            {t.label}
+            {tr(t.label)}
           </button>
         ))}
       </div>
@@ -620,13 +622,13 @@ export function Invoices() {
           <table>
             <thead>
               <tr>
-                <th>Invoice No</th>
-                <th>Date</th>
-                <th>Customer</th>
-                <th className="number">Total</th>
-                <th className="number">Outstanding</th>
-                <th>Status</th>
-                <th>Dispatch</th>
+                <th>{tr("Invoice No")}</th>
+                <th>{tr("Date")}</th>
+                <th>{tr("Customer")}</th>
+                <th className="number">{tr("Total")}</th>
+                <th className="number">{tr("Outstanding")}</th>
+                <th>{tr("Status")}</th>
+                <th>{tr("Dispatch")}</th>
                 <th>
                   <span className="sr-only">Open</span>
                 </th>

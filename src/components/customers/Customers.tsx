@@ -3,6 +3,7 @@ import { Badge, Button, Dialog, EmptyState, ErrorBanner, LoadingState, PageHeade
 import { api } from "@/services/api";
 import { formatMoney, paiseToRupeesInput, rupeesToPaise } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 
 type Customer = {
   id: number;
@@ -22,6 +23,7 @@ type CustPrice = { item_id: number; price_paise: number };
 
 export function Customers() {
   const { role, notify } = useAuth();
+  const tr = useT();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -149,13 +151,13 @@ export function Customers() {
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>State</th>
-                <th>GSTIN</th>
-                <th>Phone</th>
-                <th className="number">Credit days</th>
-                <th>Actions</th>
+                <th>{tr("Name")}</th>
+                <th>{tr("Type")}</th>
+                <th>{tr("State")}</th>
+                <th>{tr("GSTIN")}</th>
+                <th>{tr("Phone")}</th>
+                <th className="number">{tr("Credit days")}</th>
+                <th>{tr("Actions")}</th>
               </tr>
             </thead>
             <tbody>

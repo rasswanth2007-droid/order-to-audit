@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import { Badge, Button, EmptyState, ErrorBanner, LoadingState, PageHeader } from "../ui";
 import { api } from "@/services/api";
 import { formatDateTime } from "@/utils/format";
+import { useT } from "@/utils/i18n";
 
 type AuditEntry = {
   id: number;
@@ -17,6 +18,7 @@ type AuditEntry = {
 const PAGE_SIZE = 50;
 
 export function AuditLog() {
+  const tr = useT();
   const [items, setItems] = useState<AuditEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -93,11 +95,11 @@ export function AuditLog() {
             <table>
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>User</th>
-                  <th>Action</th>
-                  <th>Entity</th>
-                  <th>Details</th>
+                  <th>{tr("Timestamp")}</th>
+                  <th>{tr("User")}</th>
+                  <th>{tr("Action")}</th>
+                  <th>{tr("Entity")}</th>
+                  <th>{tr("Details")}</th>
                 </tr>
               </thead>
               <tbody>

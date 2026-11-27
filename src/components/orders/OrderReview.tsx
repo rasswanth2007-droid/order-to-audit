@@ -10,6 +10,7 @@ import {
 } from "@/utils/format";
 import { statusTone } from "@/utils/helpers";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 
 type OrderLine = {
   id: number;
@@ -61,6 +62,7 @@ type StockCheckRes = {
 
 export function OrderReview({ orderId, onBack }: { orderId: number; onBack: () => void }) {
   const { role, notify } = useAuth();
+  const tr = useT();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [stock, setStock] = useState<StockCheckRes | null>(null);
   const [edits, setEdits] = useState<Record<number, { qty: string; price: string }>>({});
@@ -243,7 +245,7 @@ export function OrderReview({ orderId, onBack }: { orderId: number; onBack: () =
   return (
     <div>
       <button className="back-link" onClick={onBack}>
-        ‹ Back to orders
+        {tr("‹ Back to orders")}
       </button>
       <PageHeader
         eyebrow="ORDER REVIEW"
@@ -267,16 +269,16 @@ export function OrderReview({ orderId, onBack }: { orderId: number; onBack: () =
           <div className="card order-lines">
             <div className="section-heading">
               <div>
-                <h2>Order lines</h2>
+                <h2>{tr("Order lines")}</h2>
                 <p>Prices shown per packet</p>
               </div>
               <Badge>{order.lines.length} ITEMS</Badge>
             </div>
             <div className="line-head">
-              <span>Product</span>
-              <span>Quantity</span>
-              <span>Price</span>
-              <span>Amount</span>
+              <span>{tr("Product")}</span>
+              <span>{tr("Quantity")}</span>
+              <span>{tr("Price")}</span>
+              <span>{tr("Amount")}</span>
             </div>
             {order.lines.map((l) => {
               const edit = edits[l.item_id];

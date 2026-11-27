@@ -3,6 +3,7 @@ import { Button, Dialog, EmptyState, ErrorBanner, LoadingState, PageHeader } fro
 import { api } from "@/services/api";
 import { formatDate, formatMoney, rupeesToPaise, todayISO } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 
 type Purchase = {
   id: number;
@@ -36,6 +37,7 @@ type LineDraft = { item_id: string; qty: string; unit: string; rate: string; gst
 
 export function Purchases() {
   const { role, notify } = useAuth();
+  const tr = useT();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [suppliers, setSuppliers] = useState<SupplierOpt[]>([]);
   const [items, setItems] = useState<ItemOpt[]>([]);
@@ -141,14 +143,14 @@ export function Purchases() {
           <table>
             <thead>
               <tr>
-                <th>Purchase No</th>
-                <th>Date</th>
-                <th>Supplier</th>
-                <th>Vendor Invoice</th>
-                <th>Items</th>
-                <th className="number">Taxable</th>
-                <th className="number">GST</th>
-                <th className="number">Total</th>
+                <th>{tr("Purchase No")}</th>
+                <th>{tr("Date")}</th>
+                <th>{tr("Supplier")}</th>
+                <th>{tr("Vendor Invoice")}</th>
+                <th>{tr("Items")}</th>
+                <th className="number">{tr("Taxable")}</th>
+                <th className="number">{tr("GST")}</th>
+                <th className="number">{tr("Total")}</th>
               </tr>
             </thead>
             <tbody>
@@ -160,7 +162,18 @@ export function Purchases() {
                   <td>{formatDate(p.purchase_date)}</td>
                   <td>{p.supplier}</td>
                   <td>{p.supplier_invoice_no || "—"}</td>
-                  <td>{p.lines.map((l) => `${l.item} (${l.qty} ${l.unit})`).join(", ")}</td>
+                  <td className="whitespace-normal">
+                    <div className="flex flex-col gap-1 min-w-[200px]">
+                      {p.lines.map((l, idx) => (
+                        <div key={idx} className="text-sm flex items-center justify-between gap-3">
+                          <span>{l.item}</span>
+                          <span className="text-xs font-semibold text-[var(--muted)] whitespace-nowrap">
+                            {l.qty} {l.unit}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </td>
                   <td className="number">{formatMoney(p.taxable_paise)}</td>
                   <td className="number">{formatMoney(p.tax_paise)}</td>
                   <td className="number">

@@ -4,6 +4,7 @@ import { ApiError, api } from "@/services/api";
 import { formatMoney, initials } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
 import { cacheSalesData, enqueueOrder, getCachedSalesData } from "@/utils/offlineQueue";
+import { useT } from "@/utils/i18n";
 
 type Customer = {
   id: number;
@@ -26,6 +27,7 @@ type ItemMeta = {
 
 export function NewOrder({ onViewOrders }: { onViewOrders?: () => void }) {
   const { notify } = useAuth();
+  const tr = useT();
   const [step, setStep] = useState(1);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [items, setItems] = useState<AvailItem[]>([]);
@@ -223,7 +225,7 @@ export function NewOrder({ onViewOrders }: { onViewOrders?: () => void }) {
         {["Customer", "Products", "Review"].map((x, i) => (
           <div className={step >= i + 1 ? "active" : ""} key={x}>
             <span>{step > i + 1 ? <Icon name="check" size={14} /> : i + 1}</span>
-            <small>{x}</small>
+            <small>{tr(x)}</small>
           </div>
         ))}
       </div>

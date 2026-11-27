@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Badge, Button, Dialog, EmptyState, ErrorBanner, LoadingState, PageHeader } from "../ui";
 import { api } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 
 type Supplier = {
   id: number;
@@ -15,6 +16,7 @@ type Supplier = {
 
 export function Suppliers() {
   const { role, notify } = useAuth();
+  const tr = useT();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -94,11 +96,11 @@ export function Suppliers() {
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>GSTIN</th>
-                <th>State</th>
-                <th>Phone</th>
-                <th>Status</th>
+                <th>{tr("Name")}</th>
+                <th>{tr("GSTIN")}</th>
+                <th>{tr("State")}</th>
+                <th>{tr("Phone")}</th>
+                <th>{tr("Status")}</th>
               </tr>
             </thead>
             <tbody>

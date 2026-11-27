@@ -3,11 +3,13 @@ import { Badge, Button, Dialog, ErrorBanner, LoadingState, PageHeader } from "..
 import { api } from "@/services/api";
 import type { Role, UserInfo } from "@/types";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 
 const ROLES: Role[] = ["ADMIN", "SALESMAN", "PRODUCTION", "ACCOUNTANT", "OWNER"];
 
 export function Users() {
   const { notify } = useAuth();
+  const tr = useT();
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -90,11 +92,11 @@ export function Users() {
           <table>
             <thead>
               <tr>
-                <th>Username</th>
-                <th>Full name</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>{tr("Username")}</th>
+                <th>{tr("Full name")}</th>
+                <th>{tr("Role")}</th>
+                <th>{tr("Status")}</th>
+                <th>{tr("Actions")}</th>
               </tr>
             </thead>
             <tbody>

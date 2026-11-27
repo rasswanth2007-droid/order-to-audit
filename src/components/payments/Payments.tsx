@@ -3,6 +3,7 @@ import { Badge, Button, Dialog, EmptyState, ErrorBanner, LoadingState, PageHeade
 import { api, apiDownload } from "@/services/api";
 import { formatDate, formatMoney, rupeesToPaise, todayISO } from "@/utils/format";
 import { useAuth } from "@/context/AuthContext";
+import { useT } from "@/utils/i18n";
 
 type PaymentRow = {
   id: number;
@@ -41,6 +42,7 @@ type AgeingReport = {
 
 export function Payments() {
   const { role, notify } = useAuth();
+  const tr = useT();
   const [tab, setTab] = useState<"payments" | "outstanding">("payments");
   const [items, setItems] = useState<PaymentRow[]>([]);
   const [ageing, setAgeing] = useState<AgeingReport | null>(null);
@@ -156,14 +158,14 @@ export function Payments() {
 
       <div className="tabs" role="tablist">
         <button role="tab" aria-selected={tab === "payments"} onClick={() => setTab("payments")}>
-          Payments
+          {tr("Payments")}
         </button>
         <button
           role="tab"
           aria-selected={tab === "outstanding"}
           onClick={() => setTab("outstanding")}
         >
-          Outstanding & ageing
+          {tr("Outstanding & ageing")}
         </button>
       </div>
 
@@ -182,12 +184,12 @@ export function Payments() {
           <table>
             <thead>
               <tr>
-                <th>Receipt No</th>
-                <th>Date</th>
-                <th>Customer</th>
-                <th>Mode</th>
-                <th>Reference</th>
-                <th className="number">Amount</th>
+                <th>{tr("Receipt No")}</th>
+                <th>{tr("Date")}</th>
+                <th>{tr("Customer")}</th>
+                <th>{tr("Mode")}</th>
+                <th>{tr("Reference")}</th>
+                <th className="number">{tr("Amount")}</th>
               </tr>
             </thead>
             <tbody>
