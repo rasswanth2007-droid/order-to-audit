@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import date, datetime, timezone
-from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, String, Text,
+from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Date, DateTime, Float, ForeignKey, Index, Integer, String, Text,
                         UniqueConstraint, event)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .db import Base
@@ -410,6 +410,34 @@ class AuditLog(Base):
     after_json: Mapped[str | None] = mapped_column(Text)
     ip: Mapped[str | None] = mapped_column(String(45))
     __table_args__ = (Index("ix_audit_entity", "entity", "entity_id"),)
+
+
+class SalesVisit(Base):
+    __tablename__ = "sales_visits"
+    id: Mapped[int] = mapped_column(BigInt, primary_key=True)
+    salesman_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"))
+    latitude: Mapped[float | None] = mapped_column(Float)
+    longitude: Mapped[float | None] = mapped_column(Float)
+    accuracy_m: Mapped[float | None] = mapped_column(Float)
+    notes: Mapped[str | None] = mapped_column(String(255))
+    visited_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    salesman: Mapped[User] = relationship()
+    customer: Mapped[Customer] = relationship()
+
+
+class Scheme(Base):
+    __tablename__ = "schemes"
+    id: Mapped[int] = mapped_column(BigInt, primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id"))
+    min_qty: Mapped[int] = mapped_column(Integer, default=1)
+    discount_bp: Mapped[int] = mapped_column(Integer, default=0)  # e.g. 500 = 5.00% off
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    item: Mapped[Item] = relationship()
+    __table_args__ = (CheckConstraint("min_qty > 0", name="ck_scheme_min_qty"),
+                      CheckConstraint("discount_bp >= 0 AND discount_bp <= 5000", name="ck_scheme_disc"))
 
 
 def _immutable(*_a, **_k):

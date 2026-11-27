@@ -21,6 +21,53 @@ def catalogue(_: m.User = Depends(require("ADMIN", "ACCOUNTANT", "OWNER", "PRODU
     return {"reports": [*rpt.REPORTS.keys(), "outstanding"], "formats": ["json", "csv", "xlsx", "pdf"], "production_role_can_see": sorted(FLOOR_REPORTS)}
 
 
+@router.get("/reports/tally-xml")
+def tally_xml(from_date: date | None = None, to_date: date | None = None,
+              _: m.User = Depends(require("ADMIN", "ACCOUNTANT", "OWNER")), db: Session = Depends(get_db)):
+    from xml.sax.saxutils import escape
+    from ..util import company
+    today = today_ist()
+    if not from_date or not to_date:
+        from_date, to_date = month_range(f"{today:%Y-%m}")
+    co = company(db)
+    invs = db.execute(select(m.Invoice).where(m.Invoice.invoice_date.between(from_date, to_date), m.Invoice.status == "ISSUED").order_by(m.Invoice.id)).scalars().all()
+    purs = db.execute(select(m.Purchase).where(m.Purchase.purchase_date.between(from_date, to_date)).order_by(m.Purchase.id)).scalars().all()
+    vouchers = []
+    for i in invs:
+        dt = f"{i.invoice_date:%Y%m%d}"
+        amt = f"{i.total_paise / 100:.2f}"
+        taxable = f"{i.taxable_paise / 100:.2f}"
+        vouchers.append(
+            f'<TALLYMESSAGE><VOUCHER VCHTYPE="Sales" ACTION="Create">'
+            f'<DATE>{dt}</DATE><VOUCHERNUMBER>{escape(i.invoice_no)}</VOUCHERNUMBER>'
+            f'<PARTYLEDGERNAME>{escape(i.buyer_name)}</PARTYLEDGERNAME>'
+            f'<ALLLEDGERENTRIES.LIST><LEDGERNAME>{escape(i.buyer_name)}</LEDGERNAME><ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE><AMOUNT>-{amt}</AMOUNT></ALLLEDGERENTRIES.LIST>'
+            f'<ALLLEDGERENTRIES.LIST><LEDGERNAME>Sales</LEDGERNAME><ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE><AMOUNT>{taxable}</AMOUNT></ALLLEDGERENTRIES.LIST>'
+            f'<ALLLEDGERENTRIES.LIST><LEDGERNAME>Output CGST</LEDGERNAME><ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE><AMOUNT>{i.cgst_paise / 100:.2f}</AMOUNT></ALLLEDGERENTRIES.LIST>'
+            f'<ALLLEDGERENTRIES.LIST><LEDGERNAME>Output SGST</LEDGERNAME><ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE><AMOUNT>{i.sgst_paise / 100:.2f}</AMOUNT></ALLLEDGERENTRIES.LIST>'
+            f'<ALLLEDGERENTRIES.LIST><LEDGERNAME>Output IGST</LEDGERNAME><ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE><AMOUNT>{i.igst_paise / 100:.2f}</AMOUNT></ALLLEDGERENTRIES.LIST>'
+            f'</VOUCHER></TALLYMESSAGE>'
+        )
+    for p in purs:
+        dt = f"{p.purchase_date:%Y%m%d}"
+        vouchers.append(
+            f'<TALLYMESSAGE><VOUCHER VCHTYPE="Purchase" ACTION="Create">'
+            f'<DATE>{dt}</DATE><VOUCHERNUMBER>{escape(p.purchase_no)}</VOUCHERNUMBER>'
+            f'<PARTYLEDGERNAME>{escape(p.supplier.name)}</PARTYLEDGERNAME>'
+            f'<ALLLEDGERENTRIES.LIST><LEDGERNAME>{escape(p.supplier.name)}</LEDGERNAME><ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE><AMOUNT>{p.total_paise / 100:.2f}</AMOUNT></ALLLEDGERENTRIES.LIST>'
+            f'<ALLLEDGERENTRIES.LIST><LEDGERNAME>Purchases</LEDGERNAME><ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE><AMOUNT>-{p.taxable_paise / 100:.2f}</AMOUNT></ALLLEDGERENTRIES.LIST>'
+            f'</VOUCHER></TALLYMESSAGE>'
+        )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        f'<ENVELOPE><HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>'
+        f'<BODY><IMPORTDATA><REQUESTDESC><REPORTNAME>Vouchers</REPORTNAME>'
+        f'<STATICVARIABLES><SVCURRENTCOMPANY>{escape(co.get("name", "Annam Foods"))}</SVCURRENTCOMPANY></STATICVARIABLES>'
+        f'</REQUESTDESC><REQUESTDATA>{"".join(vouchers)}</REQUESTDATA></IMPORTDATA></BODY></ENVELOPE>'
+    )
+    return Response(xml, media_type="application/xml", headers={"Content-Disposition": 'attachment; filename="tally-vouchers.xml"', "Cache-Control": "no-store"})
+
+
 @router.get("/reports/{key}")
 def report(key: str, from_date: date | None = None, to_date: date | None = None, format: str = Query("json", pattern="^(json|csv|xlsx|pdf)$"),
            item_id: int | None = None, kind: str | None = Query(None, pattern="^(RAW|PACKAGING|FINISHED)$"),

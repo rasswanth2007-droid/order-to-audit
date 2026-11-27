@@ -122,6 +122,55 @@ def fg_lots(_: m.User = Depends(READ), db: Session = Depends(get_db)):
     return out
 
 
+@router.get("/inventory/wip")
+def wip_runs(_: m.User = Depends(READ), db: Session = Depends(get_db)):
+    """Work-in-Progress: runs where raw materials are issued but finished output is not yet completed."""
+    runs = db.execute(select(m.ProductionRun).where(m.ProductionRun.status == "ISSUED").order_by(m.ProductionRun.id.desc())).scalars().all()
+    return [
+        {
+            "run_id": r.id,
+            "run_no": r.run_no,
+            "product": r.product.name,
+            "planned_date": r.planned_date,
+            "planned_output": r.planned_output,
+            "issued_value_paise": prod.material_cost(db, r.id),
+            "overhead_paise": sum(o.amount_paise for o in r.overheads),
+        }
+        for r in runs
+    ]
+
+
+@router.get("/production/plan-pending")
+def plan_pending(_: m.User = Depends(READ), db: Session = Depends(get_db)):
+    """Aggregate pending order demand (SUBMITTED + APPROVED without invoice) vs on-hand stock."""
+    demand: dict[int, int] = {}
+    for o in db.execute(select(m.Order).where(m.Order.status.in_(("SUBMITTED", "APPROVED")))).scalars():
+        for ln in o.lines:
+            demand[ln.item_id] = demand.get(ln.item_id, 0) + ln.qty
+    out = []
+    for iid, req_qty in demand.items():
+        it = db.get(m.Item, iid)
+        if not it:
+            continue
+        on_hand, _ = inv.balance(db, iid)
+        committed = inv.committed_fg(db, iid)
+        free = max(on_hand, 0)
+        shortage = max(req_qty - free, 0)
+        bom = db.execute(select(m.Bom).where(m.Bom.product_id == iid)).scalar_one_or_none()
+        batches = -(-shortage // bom.yield_qty) if (shortage > 0 and bom) else 0
+        out.append({
+            "product_id": iid,
+            "product": it.name,
+            "pending_demand": req_qty,
+            "on_hand": on_hand,
+            "committed": committed,
+            "shortage": shortage,
+            "has_bom": bom is not None,
+            "suggested_batches": batches,
+        })
+    return sorted(out, key=lambda x: -x["shortage"])
+
+
 @router.post("/inventory/adjustments", status_code=201)
 def adjustment(body: s.AdjustmentIn, user: m.User = Depends(WRITE), db: Session = Depends(get_db)):
     it = inv.get_item(db, body.item_id, lock=True)

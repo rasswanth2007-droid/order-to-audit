@@ -19,12 +19,24 @@ type Item = {
   is_active: boolean;
 };
 
+type SchemeRow = {
+  id: number;
+  name: string;
+  item_id: number;
+  item: string;
+  min_qty: number;
+  discount_pct: string;
+  is_active: boolean;
+};
+
 export function Products() {
   const { role, notify } = useAuth();
-  const [kind, setKind] = useState<"FINISHED" | "RAW" | "PACKAGING">(
+  const [kind, setKind] = useState<"FINISHED" | "RAW" | "PACKAGING" | "SCHEMES">(
     role === "PRODUCTION" ? "RAW" : "FINISHED",
   );
   const [items, setItems] = useState<Item[]>([]);
+  const [schemes, setSchemes] = useState<SchemeRow[]>([]);
+  const [schemeOpen, setSchemeOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [editing, setEditing] = useState<Item | "new" | null>(null);
@@ -34,8 +46,17 @@ export function Products() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api<Item[]>(`/items?kind=${kind}&active_only=false`);
-      setItems(res.data);
+      if (kind === "SCHEMES") {
+        const [scRes, fgRes] = await Promise.all([
+          api<SchemeRow[]>("/schemes"),
+          api<Item[]>("/items?kind=FINISHED"),
+        ]);
+        setSchemes(scRes.data);
+        setItems(fgRes.data);
+      } else {
+        const res = await api<Item[]>(`/items?kind=${kind}&active_only=false`);
+        setItems(res.data);
+      }
     } catch (err) {
       setError(err);
     } finally {
@@ -98,41 +119,138 @@ export function Products() {
     }
   }
 
-  const canCreate = role === "ADMIN" || (role === "PRODUCTION" && kind !== "FINISHED");
+  const canCreate =
+    role === "ADMIN" || (role === "PRODUCTION" && kind !== "FINISHED" && kind !== "SCHEMES");
+
+  async function saveScheme(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const fd = new FormData(e.currentTarget);
+    try {
+      await api("/schemes", {
+        method: "POST",
+        body: {
+          name: String(fd.get("name") || "").trim(),
+          item_id: Number(fd.get("item_id")),
+          min_qty: Number(fd.get("min_qty") || 1),
+          discount_pct: String(fd.get("discount_pct") || "0"),
+          is_active: true,
+        },
+      });
+      setSchemeOpen(false);
+      notify("Promotional scheme created");
+      await load();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div>
       <PageHeader
         eyebrow="MASTERS"
         title="Products & materials"
-        description="Finished snacks, raw ingredients, and packaging materials."
+        description="Finished snacks, raw ingredients, packaging materials and promotional schemes."
         action={
-          canCreate && (
-            <Button icon="plus" onClick={() => setEditing("new")}>
-              Add {kind.toLowerCase()}
-            </Button>
-          )
+          kind === "SCHEMES"
+            ? role === "ADMIN" && (
+                <Button icon="plus" onClick={() => setSchemeOpen(true)}>
+                  Add scheme
+                </Button>
+              )
+            : canCreate && (
+                <Button icon="plus" onClick={() => setEditing("new")}>
+                  Add {kind.toLowerCase()}
+                </Button>
+              )
         }
       />
 
       <div className="tabs" role="tablist">
-        {(["FINISHED", "RAW", "PACKAGING"] as const).map((k) => (
+        {(["FINISHED", "RAW", "PACKAGING", "SCHEMES"] as const).map((k) => (
           <button key={k} role="tab" aria-selected={kind === k} onClick={() => setKind(k)}>
-            {k === "FINISHED" ? "Finished goods" : k === "RAW" ? "Raw materials" : "Packaging"}
+            {k === "FINISHED"
+              ? "Finished goods"
+              : k === "RAW"
+                ? "Raw materials"
+                : k === "PACKAGING"
+                  ? "Packaging"
+                  : "Schemes"}
           </button>
         ))}
       </div>
 
       <ErrorBanner error={error} onRetry={load} />
-      {loading && <LoadingState label="Loading items…" />}
-      {!loading && items.length === 0 && (
+      {loading && <LoadingState label="Loading…" />}
+
+      {!loading && kind === "SCHEMES" && (
+        <>
+          {schemes.length === 0 ? (
+            <EmptyState
+              icon="trend"
+              title="No promotional schemes"
+              description="Add quantity-based discount schemes for finished products."
+            />
+          ) : (
+            <div className="table-card overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Scheme</th>
+                    <th>Product</th>
+                    <th className="number">Min qty</th>
+                    <th className="number">Discount</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {schemes.map((sc) => (
+                    <tr key={sc.id}>
+                      <td>
+                        <strong>{sc.name}</strong>
+                      </td>
+                      <td>{sc.item}</td>
+                      <td className="number">{sc.min_qty} pkts</td>
+                      <td className="number">{sc.discount_pct}%</td>
+                      <td>
+                        <Badge tone={sc.is_active ? "success" : "neutral"}>
+                          {sc.is_active ? "ACTIVE" : "PAUSED"}
+                        </Badge>
+                      </td>
+                      <td>
+                        {role === "ADMIN" && (
+                          <Button
+                            variant="secondary"
+                            onClick={async () => {
+                              await api(`/schemes/${sc.id}`, { method: "PATCH" });
+                              await load();
+                            }}
+                          >
+                            {sc.is_active ? "Pause" : "Activate"}
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {!loading && kind !== "SCHEMES" && items.length === 0 && (
         <EmptyState
           icon="box"
           title="No items"
           description={`No ${kind.toLowerCase()} items defined.`}
         />
       )}
-      {!loading && items.length > 0 && (
+      {!loading && kind !== "SCHEMES" && items.length > 0 && (
         <div className="table-card overflow-x-auto">
           <table>
             <thead>
@@ -310,6 +428,73 @@ export function Products() {
               </Button>
               <Button type="submit" disabled={busy}>
                 {busy ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </form>
+        </Dialog>
+      )}
+      {schemeOpen && (
+        <Dialog title="New promotional scheme" onClose={() => setSchemeOpen(false)}>
+          <form onSubmit={saveScheme} className="space-y-4">
+            <label className="block">
+              <span>
+                Scheme name <b>*</b>
+              </span>
+              <input
+                name="name"
+                required
+                placeholder="Bulk 5% off (100+ pkts)"
+                className="w-full"
+              />
+            </label>
+            <label className="block">
+              <span>
+                Finished product <b>*</b>
+              </span>
+              <select name="item_id" required className="w-full">
+                {items.map((it) => (
+                  <option key={it.id} value={it.id}>
+                    {it.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label>
+                <span>
+                  Min packets <b>*</b>
+                </span>
+                <input
+                  name="min_qty"
+                  type="number"
+                  min={1}
+                  defaultValue={50}
+                  required
+                  className="w-full"
+                />
+              </label>
+              <label>
+                <span>
+                  Discount % <b>*</b>
+                </span>
+                <input
+                  name="discount_pct"
+                  type="number"
+                  step="0.5"
+                  min={0.5}
+                  max={50}
+                  defaultValue={5}
+                  required
+                  className="w-full"
+                />
+              </label>
+            </div>
+            <div className="dialog-actions">
+              <Button variant="secondary" type="button" onClick={() => setSchemeOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={busy}>
+                Save scheme
               </Button>
             </div>
           </form>

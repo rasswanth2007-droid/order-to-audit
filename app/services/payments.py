@@ -11,7 +11,8 @@ def invoice_outstanding(db: Session, invoice: m.Invoice) -> int:
     if invoice.status != "ISSUED":
         return 0
     paid = db.execute(select(func.coalesce(func.sum(m.PaymentAllocation.amount_paise), 0)).where(m.PaymentAllocation.invoice_id == invoice.id)).scalar_one()
-    return invoice.total_paise - int(paid)
+    cn = db.execute(select(func.coalesce(func.sum(m.CreditNote.total_paise), 0)).where(m.CreditNote.invoice_id == invoice.id)).scalar_one()
+    return max(invoice.total_paise - int(paid) - int(cn), 0)
 
 
 def customer_balance(db: Session, customer_id: int) -> dict:

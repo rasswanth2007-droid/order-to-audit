@@ -36,6 +36,10 @@ def _build_lines(db, customer_id, raw_lines):
     for iid, packets in merged.items():
         it = inv.get_item(db, iid)
         price = price_for(db, customer_id, it)  # server decides the price; never trust the phone
+        schemes = db.execute(select(m.Scheme).where(m.Scheme.item_id == iid, m.Scheme.is_active.is_(True), m.Scheme.min_qty <= packets)).scalars().all()
+        if schemes:
+            best_bp = max(sc.discount_bp for sc in schemes)
+            price = price - (price * best_bp + 5000) // 10000
         out.append(m.OrderLine(item_id=iid, qty=packets, price_paise=price, orig_qty=packets, orig_price_paise=price))
     return out
 
@@ -238,6 +242,47 @@ def cancel_invoice(db: Session, user, invoice: m.Invoice, reason: str) -> m.Cred
     invoice.order.status = "CANCELLED"
     db.flush()
     audit(db, user, "INVOICE_CANCEL", "invoice", invoice.id, {"status": "ISSUED"}, {"status": "CANCELLED", "credit_note": cn.cn_no, "reason": reason})
+    return cn
+
+
+def return_invoice_lines(db: Session, user, invoice: m.Invoice, lines: list[dict], reason: str) -> m.CreditNote:
+    if invoice.status != "ISSUED":
+        raise Conflict("Only issued invoices can have partial returns")
+    if db.execute(select(m.CreditNote).where(m.CreditNote.invoice_id == invoice.id)).scalar_one_or_none():
+        raise Conflict("A credit note already exists for this invoice")
+    by_id = {l.id: l for l in invoice.lines}
+    taxable_t = cgst_t = sgst_t = igst_t = 0
+    intra = invoice.supply_type == "INTRA"
+    today = today_ist()
+    fy = fy_of(today)
+    for req in lines:
+        il = by_id.get(req["invoice_line_id"])
+        if not il:
+            raise NotFound("Invoice line not found")
+        qty = int(req["qty"])
+        if qty <= 0 or qty > il.dispatched_qty:
+            raise ValidationFailed(f"Return qty for {il.description} must be between 1 and {il.dispatched_qty}")
+        taxable = qty * il.price_paise
+        cgst, sgst, igst = split_tax(taxable, il.gst_rate_bp, intra)
+        taxable_t += taxable; cgst_t += cgst; sgst_t += sgst; igst_t += igst
+        it = inv.get_item(db, il.item_id, lock=True)
+        _, avg_val = inv.balance(db, it.id)
+        on_hand, _ = inv.balance(db, it.id)
+        unit_val = (avg_val // on_hand) if on_hand > 0 else (il.price_paise // 2)
+        inv.post(db, it, "SALE_RETURN", qty, today, "credit_note", invoice.id, user.id,
+                 value_delta=qty * unit_val, batch_no="RETURN", narration=f"Partial return on {invoice.invoice_no}")
+        il.dispatched_qty -= qty
+    raw_total = taxable_t + cgst_t + sgst_t + igst_t
+    total, rnd = round_to_rupee(raw_total)
+    cn = m.CreditNote(cn_no=f"CN/{fy}/{next_number(db, 'CN', fy):04d}", invoice_id=invoice.id, cn_date=today, reason=reason,
+                      taxable_paise=taxable_t, cgst_paise=cgst_t, sgst_paise=sgst_t, igst_paise=igst_t, round_off_paise=rnd,
+                      total_paise=total, stock_returned=True, created_by=user.id)
+    db.add(cn)
+    db.flush()
+    full = all(l.dispatched_qty == l.qty for l in invoice.lines)
+    any_disp = any(l.dispatched_qty > 0 for l in invoice.lines)
+    invoice.dispatch_status = "FULL" if full else ("PARTIAL" if any_disp else "NONE")
+    audit(db, user, "INVOICE_RETURN", "invoice", invoice.id, None, {"credit_note": cn.cn_no, "reason": reason, "total_paise": total})
     return cn
 
 

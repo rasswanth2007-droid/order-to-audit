@@ -647,6 +647,17 @@ function RunDetailView({ runId, onBack }: { runId: number; onBack: () => void })
 export function ProductionRun() {
   const { role, notify } = useAuth();
   const [runs, setRuns] = useState<RunSummary[]>([]);
+  const [pendingPlan, setPendingPlan] = useState<
+    Array<{
+      product_id: number;
+      product: string;
+      pending_demand: number;
+      on_hand: number;
+      shortage: number;
+      has_bom: boolean;
+      suggested_batches: number;
+    }>
+  >([]);
   const [products, setProducts] = useState<ItemOption[]>([]);
   const [boms, setBoms] = useState<BomOption[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -665,14 +676,16 @@ export function ProductionRun() {
     try {
       const qs = new URLSearchParams({ limit: "50" });
       if (statusFilter) qs.set("status", statusFilter);
-      const [runsRes, itemsRes, bomsRes] = await Promise.all([
+      const [runsRes, itemsRes, bomsRes, planRes] = await Promise.all([
         api<{ total: number; items: RunSummary[] }>(`/production/runs?${qs.toString()}`),
         api<ItemOption[]>("/items?kind=FINISHED"),
         api<BomOption[]>("/boms"),
+        api<typeof pendingPlan>("/production/plan-pending"),
       ]);
       setRuns(runsRes.data.items);
       setProducts(itemsRes.data);
       setBoms(bomsRes.data);
+      setPendingPlan(planRes.data);
       if (itemsRes.data.length > 0 && !createProdId) {
         setCreateProdId(String(itemsRes.data[0].id));
       }
@@ -776,6 +789,47 @@ export function ProductionRun() {
       </div>
 
       <ErrorBanner error={error} onRetry={load} />
+      {pendingPlan.some((p) => p.shortage > 0) && (
+        <div className="card p-4 mb-4">
+          <div className="section-heading mb-2">
+            <div>
+              <h3>Pending order demand</h3>
+              <p>Suggested production to fulfil open orders</p>
+            </div>
+            <Badge tone="warning">ACTION SUGGESTED</Badge>
+          </div>
+          <div className="space-y-2">
+            {pendingPlan
+              .filter((p) => p.shortage > 0)
+              .map((p) => (
+                <div
+                  key={p.product_id}
+                  className="flex flex-wrap items-center justify-between gap-3 text-sm border-b border-[var(--border)] pb-2"
+                >
+                  <div>
+                    <strong>{p.product}</strong>
+                    <div className="text-xs text-[var(--muted)]">
+                      Pending demand {p.pending_demand} pkts · On hand {p.on_hand} pkts · Short{" "}
+                      {p.shortage} pkts
+                    </div>
+                  </div>
+                  {canWrite && p.has_bom && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setCreateProdId(String(p.product_id));
+                        setBasisMode("batches");
+                        setCreateOpen(true);
+                      }}
+                    >
+                      Make {p.suggested_batches} batch(es)
+                    </Button>
+                  )}
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
       {loading && <LoadingState label="Loading production runs…" />}
 
       {!loading && runs.length === 0 && (

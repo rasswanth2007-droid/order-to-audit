@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { defaultViewForRole } from "@/utils/helpers";
 import { initials } from "@/utils/format";
 import { syncQueuedOrders } from "@/utils/offlineQueue";
+import { t } from "@/utils/i18n";
 
 export function Shell({
   role,
@@ -22,7 +23,7 @@ export function Shell({
   signOut: () => void;
   children: ReactNode;
 }) {
-  const { user, notify } = useAuth();
+  const { user, lang, setLang, notify } = useAuth();
   const [menu, setMenu] = useState(false);
   const [online, setOnline] = useState(() =>
     typeof navigator !== "undefined" ? navigator.onLine : true,
@@ -59,14 +60,21 @@ export function Shell({
         </a>
         <header className="sales-header">
           <Brand />
+          <button
+            type="button"
+            className="px-2 py-1 text-xs rounded border border-[var(--border)] bg-white font-semibold"
+            onClick={() => setLang(lang === "en" ? "ta" : "en")}
+          >
+            {lang === "en" ? "தமிழ்" : "EN"}
+          </button>
           <div
             className="online"
             style={online ? undefined : { background: "#fde7e5", color: "#b3261e" }}
           >
             <Icon name="wifi" size={15} />
-            {online ? "Online" : "Offline"}
+            {t(online ? "Online" : "Offline", lang)}
           </div>
-          <button aria-label="Sign out" title="Sign out" onClick={signOut}>
+          <button aria-label={t("Sign out", lang)} title={t("Sign out", lang)} onClick={signOut}>
             <Icon name="close" />
           </button>
         </header>
@@ -85,7 +93,7 @@ export function Shell({
               onClick={() => setView(n.view)}
             >
               <Icon name={n.icon} />
-              <span>{n.label}</span>
+              <span>{t(n.label, lang)}</span>
             </button>
           ))}
         </nav>
@@ -121,7 +129,7 @@ export function Shell({
               }}
             >
               <Icon name={n.icon} />
-              <span>{n.label}</span>
+              <span>{t(n.label, lang)}</span>
             </button>
           ))}
         </nav>
@@ -141,7 +149,7 @@ export function Shell({
           </button>
           <button onClick={signOut}>
             <Icon name="close" />
-            Sign out
+            {t("Sign out", lang)}
           </button>
         </div>
       </aside>
@@ -153,9 +161,16 @@ export function Shell({
           <div className="breadcrumb">
             <span>Annam Foods</span>
             <Icon name="chevron" size={14} />
-            <strong>{currentLabel}</strong>
+            <strong>{t(currentLabel, lang)}</strong>
           </div>
           <div className="top-actions">
+            <button
+              type="button"
+              className="px-3 py-1.5 text-xs rounded border border-[var(--border)] bg-white font-semibold"
+              onClick={() => setLang(lang === "en" ? "ta" : "en")}
+            >
+              {lang === "en" ? "தமிழ்" : "English"}
+            </button>
             {user?.role === "ADMIN" && (
               <div className="role-preview">
                 <span>Preview as</span>

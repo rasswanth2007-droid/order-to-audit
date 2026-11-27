@@ -41,13 +41,24 @@ type ReconcileRes = {
   checks: Array<{ check: string; ledger: number; documents: number | null; ok: boolean }>;
 };
 
+type WipRow = {
+  run_id: number;
+  run_no: string;
+  product: string;
+  planned_date: string;
+  planned_output: number;
+  issued_value_paise: number;
+  overhead_paise: number;
+};
+
 export function Stock() {
   const { role, notify } = useAuth();
-  const [tab, setTab] = useState<"summary" | "ledger" | "lots" | "reconcile">("summary");
+  const [tab, setTab] = useState<"summary" | "ledger" | "lots" | "wip" | "reconcile">("summary");
   const [kindFilter, setKindFilter] = useState("");
   const [summary, setSummary] = useState<StockRow[]>([]);
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
   const [lots, setLots] = useState<LotRow[]>([]);
+  const [wip, setWip] = useState<WipRow[]>([]);
   const [reconcile, setReconcile] = useState<ReconcileRes | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -68,6 +79,9 @@ export function Stock() {
       } else if (tab === "lots") {
         const res = await api<LotRow[]>("/inventory/lots");
         setLots(res.data);
+      } else if (tab === "wip") {
+        const res = await api<WipRow[]>("/inventory/wip");
+        setWip(res.data);
       } else if (tab === "reconcile") {
         const res = await api<ReconcileRes>("/inventory/reconcile");
         setReconcile(res.data);
@@ -146,6 +160,9 @@ export function Stock() {
         </button>
         <button role="tab" aria-selected={tab === "lots"} onClick={() => setTab("lots")}>
           Finished lots
+        </button>
+        <button role="tab" aria-selected={tab === "wip"} onClick={() => setTab("wip")}>
+          Work in progress
         </button>
         {canReconcile && (
           <button
@@ -278,6 +295,47 @@ export function Stock() {
                       <td className="number">
                         <strong>{l.qty}</strong>
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {!loading && tab === "wip" && (
+        <>
+          {wip.length === 0 ? (
+            <EmptyState
+              icon="factory"
+              title="No work-in-progress runs"
+              description="Issued production runs appear here until completed."
+            />
+          ) : (
+            <div className="table-card overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Run No</th>
+                    <th>Product</th>
+                    <th>Planned date</th>
+                    <th className="number">Planned output</th>
+                    <th className="number">Issued material value</th>
+                    <th className="number">Overheads</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {wip.map((w) => (
+                    <tr key={w.run_id}>
+                      <td>
+                        <strong>{w.run_no}</strong>
+                      </td>
+                      <td>{w.product}</td>
+                      <td>{formatDate(w.planned_date)}</td>
+                      <td className="number">{w.planned_output} pkts</td>
+                      <td className="number">{formatMoney(w.issued_value_paise)}</td>
+                      <td className="number">{formatMoney(w.overhead_paise)}</td>
                     </tr>
                   ))}
                 </tbody>

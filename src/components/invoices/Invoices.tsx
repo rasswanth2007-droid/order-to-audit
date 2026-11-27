@@ -79,6 +79,8 @@ function InvoiceDetailView({ invoiceId, onBack }: { invoiceId: number; onBack: (
   const [dispatchShortage, setDispatchShortage] = useState<
     Array<{ item_id: number; name: string; on_hand: number; requested: number }>
   >([]);
+  const [returnOpen, setReturnOpen] = useState(false);
+  const [returnQtys, setReturnQtys] = useState<Record<number, string>>({});
   const [cancelOpen, setCancelOpen] = useState(false);
 
   const load = useCallback(async () => {
@@ -177,13 +179,46 @@ function InvoiceDetailView({ invoiceId, onBack }: { invoiceId: number; onBack: (
     }
   }
 
-  async function handleShare() {
+  async function handleShare(kind: "whatsapp" | "email") {
     if (!inv) return;
     try {
-      const res = await api<{ whatsapp_url: string }>(`/invoices/${inv.id}/share`);
-      window.open(res.data.whatsapp_url, "_blank", "noopener");
+      const res = await api<{ whatsapp_url: string; mailto_url: string }>(
+        `/invoices/${inv.id}/share`,
+      );
+      window.open(
+        kind === "whatsapp" ? res.data.whatsapp_url : res.data.mailto_url,
+        "_blank",
+        "noopener",
+      );
     } catch (err) {
       setError(err);
+    }
+  }
+
+  async function handleReturn(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!inv) return;
+    setBusy(true);
+    setError(null);
+    const fd = new FormData(e.currentTarget);
+    const lines = inv.lines
+      .map((l) => ({
+        invoice_line_id: l.id,
+        qty: Math.floor(Number(returnQtys[l.id] || 0)),
+      }))
+      .filter((l) => l.qty > 0);
+    try {
+      const res = await api<{ credit_note_no: string }>(`/invoices/${inv.id}/return`, {
+        method: "POST",
+        body: { lines, reason: String(fd.get("reason") || "").trim() },
+      });
+      setReturnOpen(false);
+      notify(`Partial return recorded (${res.data.credit_note_no})`);
+      await load();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -201,6 +236,8 @@ function InvoiceDetailView({ invoiceId, onBack }: { invoiceId: number; onBack: (
 
   const isAdmin = role === "ADMIN";
   const canDispatch = isAdmin && inv.status === "ISSUED" && inv.dispatch_status !== "FULL";
+  const canReturn =
+    isAdmin && inv.status === "ISSUED" && inv.dispatch_status !== "NONE" && !inv.credit_note;
   const canCancel = isAdmin && inv.status === "ISSUED";
 
   return (
@@ -225,8 +262,23 @@ function InvoiceDetailView({ invoiceId, onBack }: { invoiceId: number; onBack: (
             >
               PDF
             </Button>
-            <Button variant="secondary" onClick={handleShare}>
+            <Button
+              variant="secondary"
+              icon="download"
+              onClick={() =>
+                apiDownload(
+                  `/invoices/${inv.id}/einvoice`,
+                  `${inv.invoice_no.replace(/\//g, "-")}-einvoice.json`,
+                )
+              }
+            >
+              e-Invoice JSON
+            </Button>
+            <Button variant="secondary" onClick={() => handleShare("whatsapp")}>
               WhatsApp
+            </Button>
+            <Button variant="secondary" onClick={() => handleShare("email")}>
+              Email
             </Button>
           </div>
         }
@@ -318,12 +370,73 @@ function InvoiceDetailView({ invoiceId, onBack }: { invoiceId: number; onBack: (
             Record dispatch
           </Button>
         )}
+        {canReturn && (
+          <Button variant="secondary" disabled={busy} onClick={() => setReturnOpen(true)}>
+            Partial return
+          </Button>
+        )}
         {canCancel && (
           <Button variant="danger" disabled={busy} onClick={() => setCancelOpen(true)}>
             Cancel invoice
           </Button>
         )}
       </div>
+
+      {returnOpen && (
+        <Dialog title="Partial sales return" onClose={() => setReturnOpen(false)}>
+          <form onSubmit={handleReturn} className="space-y-4">
+            <p className="text-sm text-[var(--muted)]">
+              Returns dispatched packets to stock and creates a Credit Note for the returned value.
+            </p>
+            <div className="space-y-2">
+              {inv.lines
+                .filter((l) => l.dispatched_qty > 0)
+                .map((l) => (
+                  <div
+                    key={l.id}
+                    className="flex items-center justify-between gap-3 border-b border-[var(--border)] pb-2"
+                  >
+                    <div className="text-sm">
+                      <strong>{l.description}</strong>
+                      <div className="text-xs text-[var(--muted)]">
+                        Dispatched: {l.dispatched_qty} pkts
+                      </div>
+                    </div>
+                    <input
+                      type="number"
+                      min={0}
+                      max={l.dispatched_qty}
+                      placeholder="0"
+                      className="w-24 text-right"
+                      value={returnQtys[l.id] ?? ""}
+                      onChange={(e) => setReturnQtys((p) => ({ ...p, [l.id]: e.target.value }))}
+                    />
+                  </div>
+                ))}
+            </div>
+            <label className="block">
+              <span>
+                Return reason <b>*</b>
+              </span>
+              <input
+                name="reason"
+                required
+                minLength={3}
+                placeholder="Damaged in transit"
+                className="w-full"
+              />
+            </label>
+            <div className="dialog-actions">
+              <Button variant="secondary" type="button" onClick={() => setReturnOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={busy}>
+                {busy ? "Processing…" : "Confirm return"}
+              </Button>
+            </div>
+          </form>
+        </Dialog>
+      )}
 
       {dispatchOpen && (
         <Dialog title="Dispatch goods (FEFO)" onClose={() => setDispatchOpen(false)}>

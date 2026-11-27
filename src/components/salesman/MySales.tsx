@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Badge, Button, EmptyState, ErrorBanner, LoadingState, PageHeader, Stat } from "../ui";
 import { api } from "@/services/api";
-import { formatMoney, todayISO } from "@/utils/format";
+import { formatDateTime, formatMoney, todayISO } from "@/utils/format";
 import { statusTone } from "@/utils/helpers";
 
 type MySalesRes = {
@@ -15,12 +15,22 @@ type MySalesRes = {
   orders_by_status: Record<string, number>;
 };
 
+type VisitRow = {
+  id: number;
+  customer: string;
+  latitude: number | null;
+  longitude: number | null;
+  notes: string | null;
+  visited_at: string;
+};
+
 export function MySales() {
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
   const [fromDate, setFromDate] = useState(monthStart);
   const [toDate, setToDate] = useState(todayISO());
   const [data, setData] = useState<MySalesRes | null>(null);
+  const [visits, setVisits] = useState<VisitRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
 
@@ -31,8 +41,12 @@ export function MySales() {
       const qs = new URLSearchParams();
       if (fromDate) qs.set("from_date", fromDate);
       if (toDate) qs.set("to_date", toDate);
-      const res = await api<MySalesRes>(`/me/sales?${qs.toString()}`);
-      setData(res.data);
+      const [salesRes, visitsRes] = await Promise.all([
+        api<MySalesRes>(`/me/sales?${qs.toString()}`),
+        api<VisitRow[]>("/visits"),
+      ]);
+      setData(salesRes.data);
+      setVisits(visitsRes.data);
     } catch (err) {
       setError(err);
     } finally {
@@ -100,7 +114,7 @@ export function MySales() {
               description="Submitted orders appear here once approved by the factory."
             />
           ) : (
-            <div className="table-card overflow-x-auto">
+            <div className="table-card overflow-x-auto mb-6">
               <table>
                 <thead>
                   <tr>
@@ -119,6 +133,41 @@ export function MySales() {
                       <td className="number">
                         <strong>{formatMoney(c.value_paise)}</strong>
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {visits.length > 0 && (
+            <div className="table-card overflow-x-auto">
+              <div className="table-title">
+                <h2>GPS visit log</h2>
+                <Badge>{visits.length} VISITS</Badge>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Time</th>
+                    <th>Location</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visits.map((v) => (
+                    <tr key={v.id}>
+                      <td>
+                        <strong>{v.customer}</strong>
+                      </td>
+                      <td>{formatDateTime(v.visited_at)}</td>
+                      <td>
+                        {v.latitude !== null && v.longitude !== null
+                          ? `${v.latitude.toFixed(4)}, ${v.longitude.toFixed(4)}`
+                          : "Manual check-in"}
+                      </td>
+                      <td>{v.notes || "—"}</td>
                     </tr>
                   ))}
                 </tbody>

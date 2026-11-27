@@ -249,6 +249,97 @@ def cancel_invoice(invoice_id: int, body: s.CancelIn, user: m.User = Depends(ADM
     return {"credit_note_no": cn.cn_no, "stock_returned": cn.stock_returned, "total_paise": cn.total_paise}
 
 
+@router.post("/invoices/{invoice_id}/return")
+def return_invoice(invoice_id: int, body: s.ReturnIn, user: m.User = Depends(ADMIN), db: Session = Depends(get_db)):
+    i = db.get(m.Invoice, invoice_id)
+    if not i:
+        raise NotFound("Invoice not found")
+    cn = svc.return_invoice_lines(db, user, i, [l.model_dump() for l in body.lines], body.reason)
+    db.commit()
+    return {"credit_note_no": cn.cn_no, "stock_returned": cn.stock_returned, "total_paise": cn.total_paise}
+
+
+@router.get("/invoices/{invoice_id}/einvoice")
+def invoice_einvoice(invoice_id: int, user: m.User = Depends(VIEWERS), db: Session = Depends(get_db)):
+    """NIC GST e-Invoice v1.03 & e-Way Bill JSON payload (mock IRP export)."""
+    i = _inv_for(db, user, invoice_id)
+    co = company(db)
+    dispatches = db.execute(select(m.Dispatch).where(m.Dispatch.invoice_id == i.id)).scalars().all()
+    veh = next((d.vehicle_no for d in dispatches if d.vehicle_no), None)
+    payload = {
+        "Version": "1.03",
+        "TranDtls": {"TaxSch": "GST", "SupTyp": "B2B" if i.buyer_gstin else "B2C", "RegRev": "N"},
+        "DocDtls": {"Typ": "INV", "No": i.invoice_no, "Dt": f"{i.invoice_date:%d/%m/%Y}"},
+        "SellerDtls": {
+            "Gstin": co.get("gstin"),
+            "LglNm": co.get("name"),
+            "Addr1": co.get("address"),
+            "Stcd": co.get("state_code"),
+        },
+        "BuyerDtls": {
+            "Gstin": i.buyer_gstin or "URP",
+            "LglNm": i.buyer_name,
+            "Pos": i.place_of_supply,
+            "Addr1": i.buyer_address or "",
+            "Stcd": i.place_of_supply,
+        },
+        "ItemList": [
+            {
+                "SlNo": str(idx + 1),
+                "PrdDesc": ln.description,
+                "HsnCd": ln.hsn_code or "21069099",
+                "Qty": ln.qty,
+                "Unit": "PKT",
+                "UnitPrice": round(ln.price_paise / 100, 2),
+                "TotAmt": round(ln.taxable_paise / 100, 2),
+                "AssAmt": round(ln.taxable_paise / 100, 2),
+                "GstRt": ln.gst_rate_bp / 100,
+                "CgstAmt": round(ln.cgst_paise / 100, 2),
+                "SgstAmt": round(ln.sgst_paise / 100, 2),
+                "IgstAmt": round(ln.igst_paise / 100, 2),
+                "TotItemVal": round((ln.taxable_paise + ln.cgst_paise + ln.sgst_paise + ln.igst_paise) / 100, 2),
+            }
+            for idx, ln in enumerate(i.lines)
+        ],
+        "ValDtls": {
+            "AssVal": round(i.taxable_paise / 100, 2),
+            "CgstVal": round(i.cgst_paise / 100, 2),
+            "SgstVal": round(i.sgst_paise / 100, 2),
+            "IgstVal": round(i.igst_paise / 100, 2),
+            "RndOffAmt": round(i.round_off_paise / 100, 2),
+            "TotInvVal": round(i.total_paise / 100, 2),
+        },
+        "EwbDtls": {"TransMode": "1", "VehNo": veh or "NOT_ASSIGNED", "VehType": "R"} if i.total_paise >= 5000000 or veh else None,
+    }
+    return payload
+
+
+@router.post("/visits", status_code=201)
+def create_visit(body: s.VisitIn, user: m.User = Depends(SALES_ROLES), db: Session = Depends(get_db)):
+    c = db.get(m.Customer, body.customer_id)
+    if not c:
+        raise NotFound("Customer not found")
+    v = m.SalesVisit(salesman_id=user.id, customer_id=body.customer_id, latitude=body.latitude,
+                     longitude=body.longitude, accuracy_m=body.accuracy_m, notes=body.notes)
+    db.add(v)
+    db.flush()
+    db.commit()
+    return {"id": v.id, "customer_id": v.customer_id, "customer": c.name, "salesman": user.full_name,
+            "latitude": v.latitude, "longitude": v.longitude, "accuracy_m": v.accuracy_m, "notes": v.notes, "visited_at": v.visited_at}
+
+
+@router.get("/visits")
+def list_visits(user: m.User = Depends(current_user), db: Session = Depends(get_db)):
+    if user.role not in ("ADMIN", "SALESMAN", "OWNER"):
+        raise Forbidden("Not allowed")
+    q = select(m.SalesVisit)
+    if user.role == "SALESMAN":
+        q = q.where(m.SalesVisit.salesman_id == user.id)
+    rows = db.execute(q.order_by(m.SalesVisit.id.desc()).limit(50)).scalars().all()
+    return [{"id": v.id, "customer_id": v.customer_id, "customer": v.customer.name, "salesman": v.salesman.full_name,
+             "latitude": v.latitude, "longitude": v.longitude, "accuracy_m": v.accuracy_m, "notes": v.notes, "visited_at": v.visited_at} for v in rows]
+
+
 # ---------------- payments ----------------
 @router.post("/payments", status_code=201)
 def create_payment(body: s.PaymentIn, response: Response, user: m.User = Depends(ADMIN), db: Session = Depends(get_db)):

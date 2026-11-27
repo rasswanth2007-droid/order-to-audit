@@ -2,10 +2,13 @@ import { createContext, useCallback, useContext, useState, type ReactNode } from
 import type { Role, UserInfo } from "@/types";
 import { setAccessToken } from "@/services/api";
 import { Toast } from "@/components/ui";
+import type { Lang } from "@/utils/i18n";
 
 type AuthContextValue = {
   user: UserInfo | null;
   role: Role | null;
+  lang: Lang;
+  setLang: (l: Lang) => void;
   setUser: (u: UserInfo | null) => void;
   setPreviewRole: (r: Role) => void;
   signOut: () => void;
@@ -17,6 +20,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<UserInfo | null>(null);
   const [previewRole, setPreviewRoleState] = useState<Role | null>(null);
+  const [lang, setLang] = useState<Lang>("en");
   const [toast, setToast] = useState<string | null>(null);
 
   const setUser = useCallback((u: UserInfo | null) => {
@@ -46,6 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         role: previewRole,
+        lang,
+        setLang,
         setUser,
         setPreviewRole,
         signOut,

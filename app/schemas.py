@@ -232,3 +232,29 @@ class AdjustmentIn(Strict):
 class SettingsIn(Strict):
     variance_tolerance_pct: Decimal | None = Field(None, ge=0, le=100)
     company: dict | None = None
+
+
+class VisitIn(Strict):
+    customer_id: int
+    latitude: float | None = Field(None, ge=-90, le=90)
+    longitude: float | None = Field(None, ge=-180, le=180)
+    accuracy_m: float | None = Field(None, ge=0)
+    notes: str | None = Field(None, max_length=255)
+
+
+class SchemeIn(Strict):
+    name: str = Field(min_length=2, max_length=120)
+    item_id: int
+    min_qty: int = Field(1, gt=0)
+    discount_pct: Decimal = Field(Decimal(0), ge=0, le=50)
+    is_active: bool = True
+
+
+class ReturnLineIn(Strict):
+    invoice_line_id: int
+    qty: int = Field(gt=0)
+
+
+class ReturnIn(Strict):
+    lines: list[ReturnLineIn] = Field(min_length=1, max_length=50)
+    reason: str = Field(min_length=3, max_length=255)

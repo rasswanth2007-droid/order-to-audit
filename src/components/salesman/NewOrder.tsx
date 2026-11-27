@@ -275,6 +275,43 @@ export function NewOrder({ onViewOrders }: { onViewOrders?: () => void }) {
               <small>ORDERING FOR</small>
               <strong>{selectedCustomer.name}</strong>
             </div>
+            <button
+              type="button"
+              onClick={async () => {
+                const sendVisit = async (
+                  lat: number | null,
+                  lng: number | null,
+                  acc: number | null,
+                ) => {
+                  try {
+                    await api("/visits", {
+                      method: "POST",
+                      body: {
+                        customer_id: selectedCustomer.id,
+                        latitude: lat,
+                        longitude: lng,
+                        accuracy_m: acc,
+                      },
+                    });
+                    notify(lat !== null ? "GPS check-in logged" : "Visit check-in logged");
+                  } catch (err) {
+                    setError(err);
+                  }
+                };
+                if (typeof navigator !== "undefined" && navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) =>
+                      sendVisit(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
+                    () => sendVisit(null, null, null),
+                    { timeout: 5000 },
+                  );
+                } else {
+                  await sendVisit(null, null, null);
+                }
+              }}
+            >
+              GPS Check-in
+            </button>
             <button onClick={() => setStep(1)}>Change</button>
           </div>
 

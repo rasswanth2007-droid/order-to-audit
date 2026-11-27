@@ -401,6 +401,17 @@ export function Reports() {
         eyebrow="REPORTING"
         title="Reports"
         description="Clear, export-ready records for sales, tax, stock and production."
+        action={
+          role !== "PRODUCTION" && (
+            <Button
+              variant="secondary"
+              icon="download"
+              onClick={() => apiDownload("/reports/tally-xml", "tally-vouchers.xml")}
+            >
+              Tally XML
+            </Button>
+          )
+        }
       />
       <ErrorBanner error={error} />
       {role !== "PRODUCTION" && (

@@ -196,3 +196,38 @@ def put_settings(body: s.SettingsIn, user: m.User = Depends(ADMIN), db: Session 
     audit(db, user, "SETTINGS", "settings", None, before, {"tol": tolerance_bp(db), "company": company(db)})
     db.commit()
     return get_settings_(user, db)
+
+
+def _scheme_view(sc: m.Scheme) -> dict:
+    return {"id": sc.id, "name": sc.name, "item_id": sc.item_id, "item": sc.item.name, "min_qty": sc.min_qty,
+            "discount_pct": f"{sc.discount_bp / 100:.2f}", "discount_bp": sc.discount_bp, "is_active": sc.is_active}
+
+
+@router.get("/schemes")
+def list_schemes(_: m.User = Depends(current_user), db: Session = Depends(get_db)):
+    return [_scheme_view(sc) for sc in db.execute(select(m.Scheme).order_by(m.Scheme.id.desc())).scalars()]
+
+
+@router.post("/schemes", status_code=201)
+def create_scheme(body: s.SchemeIn, user: m.User = Depends(ADMIN), db: Session = Depends(get_db)):
+    it = db.get(m.Item, body.item_id)
+    if not it or it.kind != "FINISHED":
+        raise ValidationFailed("Schemes apply to finished products only")
+    sc = m.Scheme(name=body.name, item_id=body.item_id, min_qty=body.min_qty,
+                  discount_bp=int(body.discount_pct * 100), is_active=body.is_active)
+    db.add(sc)
+    db.flush()
+    audit(db, user, "SCHEME_CREATE", "scheme", sc.id, None, _scheme_view(sc))
+    db.commit()
+    return _scheme_view(sc)
+
+
+@router.patch("/schemes/{sid}")
+def toggle_scheme(sid: int, user: m.User = Depends(ADMIN), db: Session = Depends(get_db)):
+    sc = db.get(m.Scheme, sid)
+    if not sc:
+        raise NotFound("Scheme not found")
+    sc.is_active = not sc.is_active
+    audit(db, user, "SCHEME_TOGGLE", "scheme", sc.id, None, {"is_active": sc.is_active})
+    db.commit()
+    return _scheme_view(sc)
