@@ -633,8 +633,11 @@
 .line-row {
   align-items: center;
   display: grid;
-  gap: 16px;
-  grid-template-columns: minmax(180px, 1.4fr) 130px 130px 110px;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(72px, 108px) minmax(82px, 116px) minmax(
+      80px,
+      104px
+    );
 }
 .line-head {
   border-bottom: 1px solid var(--border);
@@ -645,6 +648,9 @@
   margin-top: 20px;
   padding: 10px 0;
   text-transform: uppercase;
+}
+.line-head span:last-child {
+  text-align: right;
 }
 .line-row {
   border-bottom: 1px solid var(--border);
