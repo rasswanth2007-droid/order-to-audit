@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -16,6 +17,10 @@ class Settings(BaseSettings):
     login_max_failures: int = 5
     login_lock_minutes: int = 15
     seed_demo_password: str = "Demo@12345"
+
+    def model_post_init(self, __context) -> None:
+        if os.getenv("VERCEL") and self.database_url == "sqlite:///./data/app.db":
+            self.database_url = "sqlite:////tmp/app.db"
 
     @property
     def is_prod(self) -> bool:

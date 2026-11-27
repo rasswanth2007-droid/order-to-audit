@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -24,8 +25,16 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     settings.validate_for_runtime()
-    if not settings.is_prod:
-        Base.metadata.create_all(engine)  # dev convenience; production uses `alembic upgrade head`
+    if not settings.is_prod or (os.getenv("VERCEL") and settings.database_url.startswith("sqlite:////tmp/")):
+        Base.metadata.create_all(engine)  # dev / ephemeral Vercel /tmp convenience; persistent prod uses `alembic upgrade head`
+        if os.getenv("VERCEL") and settings.database_url.startswith("sqlite:////tmp/"):
+            from sqlalchemy import select
+            from . import models as m
+            from .db import SessionLocal
+            from .seed import seed
+            with SessionLocal() as db:
+                if not db.execute(select(m.User)).first():
+                    seed(db, settings.seed_demo_password)
     yield
 
 
