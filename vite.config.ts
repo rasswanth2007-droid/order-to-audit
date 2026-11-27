@@ -4,7 +4,19 @@ import tailwindcss from "@tailwindcss/vite";
 import fs from "node:fs";
 import path from "node:path";
 
-import siteConfiguration from "./.figma/make/site.json";
+import siteConfigurationFallback from "./package.json";
+
+const siteConfigPath = path.resolve(__dirname, ".figma/make/site.json");
+const siteConfiguration: FigmaSiteConfiguration = fs.existsSync(siteConfigPath)
+  ? JSON.parse(fs.readFileSync(siteConfigPath, "utf8"))
+  : {
+      title: "Order-to-Audit — Annam Foods",
+      description:
+        "Manage snack-factory sales, production, inventory, invoicing, payments, and reports in one role-based app for sales, operations, finance, and owners.",
+      robots: { index: false },
+      accessibility: { addBypassLinks: false },
+    };
+void siteConfigurationFallback;
 
 // Vite config — https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -39,10 +51,6 @@ export default defineConfig(({ mode }) => {
         "/api": "http://127.0.0.1:8000",
         "/health": "http://127.0.0.1:8000",
       },
-      proxy: {
-        "/api": "http://127.0.0.1:8000",
-        "/health": "http://127.0.0.1:8000",
-      },
       // Tool files are separate from application source and must not trigger preview updates.
       watch: {
         ignored: ["**/.figma/**"],
@@ -51,10 +59,6 @@ export default defineConfig(({ mode }) => {
     preview: {
       host: process.env.FIGMA_DEV_SERVER_HOST || "0.0.0.0",
       port: parseInt(process.env.PORT || "8443"),
-      proxy: {
-        "/api": "http://127.0.0.1:8000",
-        "/health": "http://127.0.0.1:8000",
-      },
       proxy: {
         "/api": "http://127.0.0.1:8000",
         "/health": "http://127.0.0.1:8000",
